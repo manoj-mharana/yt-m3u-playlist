@@ -1,59 +1,42 @@
-#!/usr/bin/env python3
-# generate.py
-import csv
+# generate.py (updated)
+import pandas as pd
 import subprocess
-import shlex
 import os
 
-CSV = "channels.csv"
-OUT = "playlist.m3u"
-COOKIES = "cookies.txt" if os.path.exists("cookies.txt") else None
-
-def run_yt_dlp(url):
-    # Try a few fallback commands to extract a playable URL
-    cmds = [
-        ["yt-dlp","-f","best","-g", url],
-        ["yt-dlp","-f","best[protocol^=m3u8]/best","-g", url],
-        ["yt-dlp","-f","bv*+ba/best","-g", url]  # fallback
-    ]
-    for cmd in cmds:
-        cmd_use = cmd.copy()
-        if COOKIES:
-            cmd_use += ["--cookies", COOKIES]
-        try:
-            out = subprocess.check_output(cmd_use, stderr=subprocess.DEVNULL, timeout=35)
-            text = out.decode().strip()
-            if text:
-                # sometimes yt-dlp returns multiple URLs separated by newline; take first
-                return text.splitlines()[0].strip()
-        except Exception:
-            continue
+def get_stream_url(url):
+    try:
+        # yt-dlp -g returns direct media URL(s)
+        proc = subprocess.run(['yt-dlp', '-g', url], capture_output=True, text=True, timeout=40)
+        out = proc.stdout.strip().splitlines()
+        if out:
+            # prefer first non-empty line
+            for line in out:
+                if line.strip():
+                    return line.strip()
+    except Exception as e:
+        print("yt-dlp error for", url, "->", e)
     return None
 
-def safe(s):
-    return s.strip()
+def generate_m3u(csv_file, output_file):
+    df = pd.read_csv(csv_file)
+    with open(output_file, "w", encoding="utf-8") as f:
+        f.write("#EXTM3U\n")
+        for _, row in df.iterrows():
+            name = row.get("name", "") or ""
+            url = (row.get("url", "") or "").strip()
+            if not url:
+                continue
+            stream = url
+            if "youtube.com" in url or "youtu.be" in url:
+                s = get_stream_url(url)
+                if s:
+                    stream = s
+                else:
+                    print("Warning: could not extract stream for", name)
+            f.write(f"#EXTINF:-1,{name}\n{stream}\n")
 
-with open(OUT,"w",encoding="utf-8") as outf:
-    outf.write("#EXTM3U\n")
-    with open(CSV, newline='', encoding='utf-8') as f:
-        reader = csv.reader(f)
-        for row in reader:
-            if not row: 
-                continue
-            # handle header if present
-            if len(row) >= 2 and row[0].strip().lower() == "name" and row[1].strip().lower().startswith("http"):
-                # header detected because first col is "name" and second looks like url; still process (but skip if header row)
-                pass
-            if len(row) < 2:
-                continue
-            name = safe(row[0])
-            url = safe(row[1])
-            if not name or not url:
-                continue
-            print(f"Processing: {name} -> {url}")
-            stream = run_yt_dlp(url)
-            if stream:
-                outf.write(f'#EXTINF:-1 tvg-name="{name}",{name}\n')
-                outf.write(stream + "\n")
-            else:
-                print(f"Warning: no URL found for {name}")
+if __name__ == "__main__":
+    csv_file = os.environ.get("CSV_FILE", "channels.csv")
+    output_file = os.environ.get("OUTPUT_FILE", "playlist.m3u")
+    generate_m3u(csv_file, output_file)
+    print("✅ Playlist generated:", output_file)
