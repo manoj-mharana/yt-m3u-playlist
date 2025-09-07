@@ -1,15 +1,20 @@
-# generate.py (updated)
+# generate.py (with cookies support)
 import pandas as pd
 import subprocess
 import os
 
+COOKIES_FILE = "cookies.txt"  # workflow में generate होगा
+
 def get_stream_url(url):
     try:
-        # yt-dlp -g returns direct media URL(s)
-        proc = subprocess.run(['yt-dlp', '-g', '--cookies', 'cookies.txt', url], capture_output=True, text=True, timeout=120)
+        cmd = ['yt-dlp', '-g']
+        if os.path.exists(COOKIES_FILE):
+            cmd += ['--cookies', COOKIES_FILE]
+        cmd.append(url)
+
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
         out = proc.stdout.strip().splitlines()
         if out:
-            # prefer first non-empty line
             for line in out:
                 if line.strip():
                     return line.strip()
