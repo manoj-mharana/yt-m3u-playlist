@@ -6,7 +6,7 @@ import os
 def get_stream_url(url):
     try:
         # yt-dlp -g returns direct media URL(s)
-        proc = subprocess.run(['yt-dlp', '-g', url], capture_output=True, text=True, timeout=40)
+        proc = subprocess.run(['yt-dlp', '-g', '--cookies', 'cookies.txt', url], capture_output=True, text=True, timeout=120)
         out = proc.stdout.strip().splitlines()
         if out:
             # prefer first non-empty line
