@@ -1,9 +1,12 @@
-# generate.py (with cookies support)
+# generate.py (Hostinger version)
 import pandas as pd
 import subprocess
 import os
 
-COOKIES_FILE = "cookies.txt"  # workflow में generate होगा
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CSV_FILE = os.path.join(BASE_DIR, "channels.csv")
+OUTPUT_FILE = os.path.join(BASE_DIR, "playlist.m3u")
+COOKIES_FILE = os.path.join(BASE_DIR, "cookies.txt")
 
 def get_stream_url(url):
     try:
@@ -22,9 +25,9 @@ def get_stream_url(url):
         print("yt-dlp error for", url, "->", e)
     return None
 
-def generate_m3u(csv_file, output_file):
-    df = pd.read_csv(csv_file)
-    with open(output_file, "w", encoding="utf-8") as f:
+def generate_m3u():
+    df = pd.read_csv(CSV_FILE)
+    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         f.write("#EXTM3U\n")
         for _, row in df.iterrows():
             name = row.get("name", "") or ""
@@ -41,7 +44,5 @@ def generate_m3u(csv_file, output_file):
             f.write(f"#EXTINF:-1,{name}\n{stream}\n")
 
 if __name__ == "__main__":
-    csv_file = os.environ.get("CSV_FILE", "channels.csv")
-    output_file = os.environ.get("OUTPUT_FILE", "playlist.m3u")
-    generate_m3u(csv_file, output_file)
-    print("✅ Playlist generated:", output_file)
+    generate_m3u()
+    print("✅ Playlist updated:", OUTPUT_FILE)
