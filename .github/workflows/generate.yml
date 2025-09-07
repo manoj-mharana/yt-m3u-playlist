@@ -38,6 +38,9 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          - name: Write cookies
+        run: echo "${{ secrets.YT_COOKIES }}" > cookies.txt
           git checkout -B gh-pages
           echo "iptv.sarkaridarpan.com" > CNAME
           git add playlist.m3u CNAME
