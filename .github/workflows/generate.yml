@@ -2,7 +2,7 @@ name: Generate M3U Playlist
 
 on:
   schedule:
-    - cron: '*/15 * * * *'   # every 15 minutes (adjust if you want)
+    - cron: '*/15 * * * *'   # हर 15 मिनट में auto-run
   workflow_dispatch:
   push:
     paths:
@@ -12,6 +12,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # ✅ gh-pages पर push करने के लिए जरूरी
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -29,6 +31,9 @@ jobs:
       - name: Install ffmpeg (for some streams)
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
+      - name: Write cookies
+        run: echo "${{ secrets.YT_COOKIES }}" > cookies.txt
+
       - name: Run script to generate playlist
         run: python generate.py
 
@@ -38,9 +43,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          - name: Write cookies
-        run: echo "${{ secrets.YT_COOKIES }}" > cookies.txt
           git checkout -B gh-pages
           echo "iptv.sarkaridarpan.com" > CNAME
           git add playlist.m3u CNAME
