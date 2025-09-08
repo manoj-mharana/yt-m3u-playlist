@@ -3,7 +3,7 @@ name: Update Playlist
 on:
   schedule:
     - cron: "0 */3 * * *"   # हर 3 घंटे में run होगा
-  workflow_dispatch:         # manual run option
+  workflow_dispatch:
 
 jobs:
   build:
@@ -22,16 +22,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install pandas yt-dlp
 
+      - name: Create cookies.txt from secret
+        run: |
+          echo "${{ secrets.YT_COOKIES }}" > cookies.txt
+
       - name: Run generator
         run: |
-          if [ -f cookies.txt ]; then
-            echo "✅ Using cookies.txt"
-            export YTDLP_OPTS="--cookies cookies.txt"
-          else
-            echo "⚠️ No cookies.txt found, running without login"
-            export YTDLP_OPTS=""
-          fi
-
+          export YTDLP_OPTS="--cookies cookies.txt"
           python generate.py
 
       - name: Deploy to gh-pages
