@@ -2,7 +2,7 @@ name: Update Playlist
 
 on:
   schedule:
-    - cron: "*/30 * * * *"   # हर 30 मिनट में run
+    - cron: "0 * * * *" # हर 30 मिनट में run
   workflow_dispatch:
 
 jobs:
